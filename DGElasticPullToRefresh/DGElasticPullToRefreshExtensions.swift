@@ -1,28 +1,28 @@
 /*
-
-The MIT License (MIT)
-
-Copyright (c) 2015 Danil Gontovnik
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-*/
+ 
+ The MIT License (MIT)
+ 
+ Copyright (c) 2015 Danil Gontovnik
+ 
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ 
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ 
+ */
 
 import UIKit
 import ObjectiveC
@@ -81,54 +81,86 @@ public extension NSObject {
 
 public extension UIScrollView {
     
-    // MARK: - Vars
-
+    // MARK: -
+    // MARK: Vars
+    
     private struct dg_associatedKeys {
         static var pullToRefreshView = "pullToRefreshView"
     }
-
-    private var pullToRefreshView: DGElasticPullToRefreshView? {
+    
+    private var _pullToRefreshView: DGElasticPullToRefreshView? {
         get {
-            return objc_getAssociatedObject(self, &dg_associatedKeys.pullToRefreshView) as? DGElasticPullToRefreshView
+            if let pullToRefreshView = objc_getAssociatedObject(self, &dg_associatedKeys.pullToRefreshView) as? DGElasticPullToRefreshView {
+                return pullToRefreshView
+            }
+            
+            return nil
         }
-
         set {
             objc_setAssociatedObject(self, &dg_associatedKeys.pullToRefreshView, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
     }
     
-    // MARK: - Methods (Public)
+    private var pullToRefreshView: DGElasticPullToRefreshView! {
+        get {
+            if let pullToRefreshView = _pullToRefreshView {
+                return pullToRefreshView
+            } else {
+                let pullToRefreshView = DGElasticPullToRefreshView()
+                _pullToRefreshView = pullToRefreshView
+                return pullToRefreshView
+            }
+        }
+    }
+    
+    // MARK: -
+    // MARK: Methods (Public)
+    
+    public func dg_addPullToRefreshWithActionHandler(actionHandler: () -> Void) {
+        let loadingView = DGElasticPullToRefreshLoadingViewCircle()
+        loadingView.tintColor = UIColor.whiteColor()
+        dg_addPullToRefreshWithActionHandler(actionHandler, loadingView: loadingView)
+    }
     
     public func dg_addPullToRefreshWithActionHandler(actionHandler: () -> Void, loadingView: DGElasticPullToRefreshLoadingView?) {
         multipleTouchEnabled = false
         panGestureRecognizer.maximumNumberOfTouches = 1
-
-        let pullToRefreshView = DGElasticPullToRefreshView()
-        self.pullToRefreshView = pullToRefreshView
+        
         pullToRefreshView.actionHandler = actionHandler
         pullToRefreshView.loadingView = loadingView
         addSubview(pullToRefreshView)
-
+        
         pullToRefreshView.observing = true
     }
     
     public func dg_removePullToRefresh() {
-        pullToRefreshView?.disassociateDisplayLink()
-        pullToRefreshView?.observing = false
-        pullToRefreshView?.removeFromSuperview()
+        pullToRefreshView.observing = false
+        pullToRefreshView.removeFromSuperview()
     }
     
     public func dg_setPullToRefreshBackgroundColor(color: UIColor) {
-        pullToRefreshView?.backgroundColor = color
+        pullToRefreshView.backgroundColor = color
     }
     
     public func dg_setPullToRefreshFillColor(color: UIColor) {
-        pullToRefreshView?.fillColor = color
+        pullToRefreshView.fillColor = color
+    }
+    
+    public func dg_startLoading() {
+        pullToRefreshView.startLoading()
     }
     
     public func dg_stopLoading() {
-        pullToRefreshView?.stopLoading()
+        pullToRefreshView.stopLoading()
     }
+    
+    func dg_stopScrollingAnimation() {
+        if let superview = self.superview, let index = superview.subviews.indexOf({ $0 == self }) as Int! {
+            removeFromSuperview()
+            superview.insertSubview(self, atIndex: index)
+        }
+    }
+    
 }
 
 // MARK: -
